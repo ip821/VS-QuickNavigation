@@ -278,21 +278,32 @@ namespace VS_QuickNavigation
 			if (e.IsDown)
 			{
 				if (e.Key == System.Windows.Input.Key.Return)
-				{
-					EnvDTE80.DTE2 dte2 = ServiceProvider.GlobalProvider.GetService(typeof(Microsoft.VisualStudio.Shell.Interop.SDTE)) as EnvDTE80.DTE2;
-					int selectedIndex = listView.SelectedIndex;
-					if (selectedIndex == -1) selectedIndex = 0;
-					SymbolData symbolData = listView.Items[selectedIndex] as SymbolData;
-					//dte2.ItemOperations.OpenFile(file.Path);
-					((EnvDTE.TextSelection)dte2.ActiveDocument.Selection).GotoLine(symbolData.Line);
-
-					(this.Parent as QuickFileToolWindow).Close();
-				}
-				else if (e.Key == System.Windows.Input.Key.Escape)
+                {
+                    GoToSelection();
+                }
+                else if (e.Key == System.Windows.Input.Key.Escape)
 				{
 					(Parent as DialogWindow).Close();
 				}
 			}
 		}
-	}
+
+        private void GoToSelection()
+        {
+            EnvDTE80.DTE2 dte2 = ServiceProvider.GlobalProvider.GetService(typeof(Microsoft.VisualStudio.Shell.Interop.SDTE)) as EnvDTE80.DTE2;
+            int selectedIndex = listView.SelectedIndex;
+            if (selectedIndex == -1)
+                return;
+            SymbolData symbolData = listView.Items[selectedIndex] as SymbolData;
+            //dte2.ItemOperations.OpenFile(file.Path);
+            ((EnvDTE.TextSelection)dte2.ActiveDocument.Selection).GotoLine(symbolData.Line);
+
+            (Parent as DialogWindow).Close();
+        }
+
+        private void listView_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            GoToSelection();
+        }
+    }
 }
