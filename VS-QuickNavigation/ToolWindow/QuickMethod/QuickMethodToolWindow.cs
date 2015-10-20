@@ -16,6 +16,7 @@ namespace VS_QuickNavigation
 
 			this.Width = 1000;
 			this.Height = 400;
+            WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner;
 		}
 	}
 }

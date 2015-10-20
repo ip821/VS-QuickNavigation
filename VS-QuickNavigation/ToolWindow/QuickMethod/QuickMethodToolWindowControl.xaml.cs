@@ -6,18 +6,19 @@
 
 namespace VS_QuickNavigation
 {
-	using Microsoft.VisualStudio.Shell;
-	using System;
-	using System.Collections.Generic;
-	using System.Collections.ObjectModel;
-	using System.Windows.Controls;
-	using System.Windows.Data;
-	using System.Windows.Documents;
+    using Microsoft.VisualStudio.Shell;
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Windows.Controls;
+    using System.Windows.Data;
+    using System.Windows.Documents;
+    using Microsoft.VisualStudio.PlatformUI;
 
-	/// <summary>
-	/// Interaction logic for QuickMethodToolWindowControl.
-	/// </summary>
-	public partial class QuickMethodToolWindowControl : UserControl
+    /// <summary>
+    /// Interaction logic for QuickMethodToolWindowControl.
+    /// </summary>
+    public partial class QuickMethodToolWindowControl : UserControl
 	{
 		private class SymbolData
 		{
@@ -27,15 +28,17 @@ namespace VS_QuickNavigation
 				System.Windows.Media.BrushConverter converter = new System.Windows.Media.BrushConverter();
 				sBackgroundBrush = (System.Windows.Media.Brush)(converter.ConvertFromString("#FFFFA0"));
 			}
-			public SymbolData(string symbol, int line)
+			public SymbolData(string symbol, string sparams, int line)
 			{
 				Symbol = symbol;
-				Line = line;
+                Params = sparams;
+                Line = line;
 				GetScore("");
 			}
 
 			public string Symbol { get; set; }
-			public int Line { get; set; }
+            public string Params { get; set; }
+            public int Line { get; set; }
 			public InlineCollection FileFormatted { get; set; }
 
 			private string mLastSearch;
@@ -146,15 +149,18 @@ namespace VS_QuickNavigation
 
 			ListCollectionView view = (ListCollectionView)CollectionViewSource.GetDefaultView(listView.ItemsSource);
 			mComparer = new SymbolDataComparer();
-			view.CustomSort = mComparer;
+			//view.CustomSort = mComparer;
+            view.Filter = (obj) => ((SymbolData)obj).Symbol.ToLower().Contains(_filterString.ToLower());
 
-			EnvDTE80.DTE2 dte2 = ServiceProvider.GlobalProvider.GetService(typeof(Microsoft.VisualStudio.Shell.Interop.SDTE)) as EnvDTE80.DTE2;
+            EnvDTE80.DTE2 dte2 = ServiceProvider.GlobalProvider.GetService(typeof(Microsoft.VisualStudio.Shell.Interop.SDTE)) as EnvDTE80.DTE2;
 			EnvDTE.CodeElements codeElements = dte2.ActiveDocument.ProjectItem.FileCodeModel.CodeElements;
 
 			AnalyseCodeElements(codeElements);
 			
 			textBox.Focus();
 		}
+
+        string _filterString = string.Empty;
 
 		private void AnalyseCodeElements(EnvDTE.CodeElements codeElements)
 		{
@@ -165,12 +171,12 @@ namespace VS_QuickNavigation
 					if (objCodeElement is EnvDTE.CodeFunction)
 					{
 						EnvDTE.CodeFunction objCodeFunction = objCodeElement as EnvDTE.CodeFunction;
-						string sSymbol = objCodeElement.FullName;
-						sSymbol += "(";
+						string sSymbol = objCodeElement.Name;
+						var sParams = "";
 
 						if (null != objCodeFunction.Parameters && objCodeFunction.Parameters.Count > 0)
 						{
-							sSymbol += " ";
+                            sParams += " ";
 							bool bFirstMember = true;
 							foreach (EnvDTE.CodeParameter objCodeParameter in objCodeFunction.Parameters)
 							{
@@ -180,18 +186,18 @@ namespace VS_QuickNavigation
 								}
 								else
 								{
-									sSymbol += ", ";
+                                    sParams += ", ";
 								}
-								sSymbol += objCodeParameter.Type.AsString;
-								sSymbol += " ";
-								sSymbol += objCodeParameter.Name;
+                                sParams += objCodeParameter.Type.AsString;
+                                sParams += " ";
+                                sParams += objCodeParameter.Name;
 							}
-							sSymbol += " ";
+                            sParams += " ";
 						}
 
-						sSymbol += ")";
+                        //sParams += ")";
 						
-						mRows.Add(new SymbolData(sSymbol, objCodeElement.StartPoint.Line));
+						mRows.Add(new SymbolData(sSymbol, sParams, objCodeElement.StartPoint.Line));
 					}
 					else
 					{
@@ -262,9 +268,9 @@ namespace VS_QuickNavigation
 		private void textBox_TextChanged(object sender, TextChangedEventArgs e)
 		{
 			mComparer.mSearchText = textBox.Text;
-			//RefreshListView();
+            _filterString = textBox.Text;
 
-			CollectionViewSource.GetDefaultView(listView.ItemsSource).Refresh();
+            CollectionViewSource.GetDefaultView(listView.ItemsSource).Refresh();
 		}
 
 		private void listView_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -284,7 +290,7 @@ namespace VS_QuickNavigation
 				}
 				else if (e.Key == System.Windows.Input.Key.Escape)
 				{
-					(this.Parent as QuickFileToolWindow).Close();
+					(Parent as DialogWindow).Close();
 				}
 			}
 		}
