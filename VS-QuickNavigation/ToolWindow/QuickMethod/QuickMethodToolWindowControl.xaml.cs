@@ -236,7 +236,8 @@ namespace VS_QuickNavigation
 			{
 				if (e.Key == System.Windows.Input.Key.Up)
 				{
-					listView.SelectedIndex--;
+                    if(listView.SelectedIndex >= 0)
+					    listView.SelectedIndex--;
 					e.Handled = true;
 				}
 				else if (e.Key == System.Windows.Input.Key.Down)
